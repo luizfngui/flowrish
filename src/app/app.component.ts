@@ -6,7 +6,6 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
-  HostListener,
   NgZone,
   OnDestroy,
   ViewChild,
@@ -37,25 +36,21 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   @ViewChild('cursorDot', { static: false }) cursorDot?: ElementRef<HTMLElement>;
   @ViewChild('paper', { static: false }) paper?: ElementRef<HTMLElement>;
 
-  // Services refs for parallax
-  @ViewChild('servicesSection', { static: false })
-  servicesSection?: ElementRef<HTMLElement>;
-  @ViewChild('servicesBgA', { static: false })
-  servicesBgA?: ElementRef<HTMLElement>;
-  @ViewChild('servicesBgB', { static: false })
-  servicesBgB?: ElementRef<HTMLElement>;
+  @ViewChild('servicesSection', { static: false }) servicesSection?: ElementRef<HTMLElement>;
+  @ViewChild('servicesBgA', { static: false }) servicesBgA?: ElementRef<HTMLElement>;
+  @ViewChild('servicesBgB', { static: false }) servicesBgB?: ElementRef<HTMLElement>;
 
-  // Custom cursor state
   private mouseX = 0;
   private mouseY = 0;
   private dotX = 0;
   private dotY = 0;
   private rafId: number | null = null;
 
-  // Motion preference
+  private removePointerListener: (() => void) | null = null;
+  private removeResizeListener: (() => void) | null = null;
+
   reduceMotion = false;
 
-  // SERVICES state (default selected = 0)
   activeServiceIndex = 0;
   readonly serviceBgs = ['images/image1.jpg', 'images/image2.jpg', 'images/image3.jpg'];
 
@@ -65,30 +60,29 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   private fadeTimer: number | null = null;
 
-  // Smoother hover switching
   private pendingServiceIndex: number | null = null;
   private hoverRaf: number | null = null;
   private lastSwitchAt = 0;
 
-  // Must match CSS vars in styles.css
-  private readonly FADE_MS = 950; // smoother, slightly longer
-  private readonly MIN_GAP_MS = 130; // small buffer to prevent thrash
+  private readonly FADE_MS = 950;
+  private readonly MIN_GAP_MS = 130;
 
   ngAfterViewInit(): void {
     if (!this.isBrowser) return;
 
-    // Safety: never keep content hidden by old gsap-on patterns
     document.documentElement.classList.remove('gsap-on');
 
     this.reduceMotion =
       window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
 
-    // Preload service backgrounds to remove decode stutter
     this.preloadServiceImages();
 
     const finePointer = window.matchMedia?.('(pointer: fine)')?.matches ?? false;
     if (finePointer) {
-      this.zone.runOutsideAngular(() => this.startCursorLoop());
+      this.zone.runOutsideAngular(() => {
+        this.bindPointerTracking();
+        this.startCursorLoop();
+      });
     }
 
     if (!this.reduceMotion) {
@@ -104,9 +98,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
     if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
+
+    this.removePointerListener?.();
+    this.removeResizeListener?.();
   }
 
-  // Services pointer handlers (your HTML calls these)
   onServiceEnter(index: number) {
     this.setCursorState('link');
     this.queueActiveService(index);
@@ -114,6 +110,9 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   onServiceLeave() {
     this.setCursorState('default');
+
+    // ✅ evita “troca atrasada” quando sai rápido dos cards
+    this.pendingServiceIndex = null;
   }
 
   private queueActiveService(index: number) {
@@ -128,22 +127,22 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       const since = now - this.lastSwitchAt;
       if (since < this.MIN_GAP_MS) {
         window.setTimeout(() => {
-          if (this.pendingServiceIndex != null) {
-            const idx = this.pendingServiceIndex;
-            this.pendingServiceIndex = null;
-            this.zone.run(() => this.setActiveService(idx));
-          }
+          const idx = this.pendingServiceIndex;
+          this.pendingServiceIndex = null;
+          if (idx == null) return;
+          this.zone.run(() => this.setActiveService(idx));
         }, this.MIN_GAP_MS - since);
         return;
       }
 
       const idx = this.pendingServiceIndex;
       this.pendingServiceIndex = null;
-      this.zone.run(() => this.setActiveService(idx!));
+      if (idx == null) return;
+
+      this.zone.run(() => this.setActiveService(idx));
     });
   }
 
-  // Services: hover/select behavior + background crossfade (smoother)
   setActiveService(index: number) {
     if (index === this.activeServiceIndex) return;
 
@@ -151,7 +150,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     const url = this.serviceBgs[index];
     this.lastSwitchAt = performance.now();
 
-    // If a fade is already in progress, commit current state first
     if (this.fadeTimer) {
       window.clearTimeout(this.fadeTimer);
       this.fadeTimer = null;
@@ -159,14 +157,10 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       this.isServicesFading = false;
     }
 
-    // Stage next image on layer B, then crossfade
     this.nextServiceBg = url;
-
-    // Trigger crossfade (CSS animates opacity + subtle zoom)
     this.isServicesFading = true;
     this.cdr.markForCheck();
 
-    // After fade completes, commit & reset
     this.fadeTimer = window.setTimeout(() => {
       this.zone.run(() => {
         this.currentServiceBg = this.nextServiceBg;
@@ -178,15 +172,37 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   }
 
   private preloadServiceImages() {
-    // Pre-decode images to avoid lag on the first hover
     for (const src of this.serviceBgs) {
       const img = new Image();
       img.decoding = 'async';
       img.loading = 'eager';
       img.src = src;
-      // If supported, hint decode early (no-op on some browsers)
       (img as any).decode?.().catch?.(() => {});
     }
+  }
+
+  private bindPointerTracking() {
+    const onMove = (e: PointerEvent | MouseEvent) => {
+      this.mouseX = e.clientX;
+      this.mouseY = e.clientY;
+    };
+
+    window.addEventListener('pointermove', onMove as any, { passive: true });
+
+    this.removePointerListener = () => {
+      window.removeEventListener('pointermove', onMove as any);
+      this.removePointerListener = null;
+    };
+
+    const onResize = () => {
+      this.dotX = this.mouseX;
+      this.dotY = this.mouseY;
+    };
+    window.addEventListener('resize', onResize, { passive: true });
+    this.removeResizeListener = () => {
+      window.removeEventListener('resize', onResize);
+      this.removeResizeListener = null;
+    };
   }
 
   private startCursorLoop() {
@@ -202,13 +218,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       this.rafId = requestAnimationFrame(loop);
     };
-    this.rafId = requestAnimationFrame(loop);
-  }
 
-  @HostListener('window:mousemove', ['$event'])
-  onMouseMove(e: MouseEvent) {
-    this.mouseX = e.clientX;
-    this.mouseY = e.clientY;
+    this.rafId = requestAnimationFrame(loop);
   }
 
   setCursorState(state: CursorState) {
@@ -248,12 +259,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       if (!hero || !left || !right || !paper) return;
 
-      // Nav reveal
       if (nav) {
         gsap.fromTo(
           nav,
-          { y: -12, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', immediateRender: false }
+          { y: -10, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.65, ease: 'power2.out', immediateRender: false }
         );
       }
 
@@ -264,7 +274,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         return vpCenter - elCenter;
       };
 
-      gsap.set([left, right], { willChange: 'transform, opacity, filter' });
+      gsap.set([left, right], { willChange: 'transform, opacity' });
       gsap.set(paper, { yPercent: 100, willChange: 'transform' });
 
       const pinOpts = {
@@ -282,7 +292,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           trigger: hero,
           start: 'top top',
           end: () => `+=${Math.round(window.innerHeight * 1.35)}`,
-          scrub: 1.5,
+          scrub: 1.35,
           ...pinOpts,
         },
       })
@@ -290,8 +300,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         .addLabel('fade', 0.78)
         .to(left, { x: centerDeltaX(left), duration: 0.78 }, 'join')
         .to(right, { x: centerDeltaX(right), duration: 0.78 }, 'join')
-        .to([left, right], { y: -8, scale: 0.985, opacity: 0.95, duration: 0.78 }, 'join')
-        .to([left, right], { y: -40, opacity: 0, filter: 'blur(10px)', duration: 0.22 }, 'fade');
+        .to([left, right], { y: -8, scale: 0.985, opacity: 0.96, duration: 0.78 }, 'join')
+        .to([left, right], { y: -36, opacity: 0, duration: 0.22 }, 'fade');
 
       gsap.to(paper, {
         yPercent: 0,
@@ -300,12 +310,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
           trigger: hero,
           start: 'top top+=20%',
           end: () => `+=${Math.round(window.innerHeight * 1.4)}`,
-          scrub: 1.6,
+          scrub: 1.45,
           invalidateOnRefresh: true,
         },
       });
 
-      // ✅ Better parallax: almost static (tiny drift)
       const services = this.servicesSection?.nativeElement;
       const bgA = this.servicesBgA?.nativeElement;
       const bgB = this.servicesBgB?.nativeElement;
@@ -313,7 +322,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       if (services && bgA && bgB) {
         gsap.set([bgA, bgB], { willChange: 'transform' });
 
-        // very subtle drift so it feels “anchored”
         gsap.to([bgA, bgB], {
           yPercent: -3.5,
           ease: 'none',
@@ -321,35 +329,33 @@ export class AppComponent implements AfterViewInit, OnDestroy {
             trigger: services,
             start: 'top bottom',
             end: 'bottom top',
-            scrub: 1.1,
+            scrub: 1.05,
             invalidateOnRefresh: true,
           },
         });
       }
 
-      // Reveal animations
       const revealEls = Array.from(document.querySelectorAll('[data-reveal]')) as HTMLElement[];
 
       revealEls.forEach((el) => {
         const mode = el.dataset['reveal'] || 'up';
         const from =
           mode === 'left'
-            ? { opacity: 0, filter: 'blur(10px)', x: -64, y: 10 }
+            ? { opacity: 0, x: -56, y: 10 }
             : mode === 'right'
-            ? { opacity: 0, filter: 'blur(10px)', x: 64, y: 10 }
-            : { opacity: 0, filter: 'blur(10px)', x: 0, y: 22 };
+            ? { opacity: 0, x: 56, y: 10 }
+            : { opacity: 0, x: 0, y: 22 };
 
-        gsap.set(el, { willChange: 'transform, opacity, filter' });
+        gsap.set(el, { willChange: 'transform, opacity' });
 
         gsap.fromTo(
           el,
           from,
           {
             opacity: 1,
-            filter: 'blur(0px)',
             x: 0,
             y: 0,
-            duration: 0.9,
+            duration: 0.85,
             ease: 'power2.out',
             immediateRender: false,
             scrollTrigger: {
@@ -363,12 +369,12 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       });
 
       const refreshAll = () => {
-        ScrollTrigger.refresh(true);
-        ScrollTrigger.update();
+        // ✅ só refresh (menos trabalho)
+        ScrollTrigger.refresh();
       };
 
       requestAnimationFrame(refreshAll);
-      setTimeout(refreshAll, 300);
+      setTimeout(refreshAll, 250);
       (document as any).fonts?.ready?.then?.(() => refreshAll());
       window.addEventListener('load', refreshAll, { once: true });
     } catch (err) {

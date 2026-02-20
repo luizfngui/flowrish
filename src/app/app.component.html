@@ -26,51 +26,16 @@
       </button>
 
       <div class="hidden md:flex items-center gap-1">
-        <button
-          class="nav-link"
-          type="button"
-          (click)="scrollTo('about')"
-          (pointerenter)="setCursorState('link')"
-          (pointerleave)="setCursorState('default')"
-        >
-          About
-        </button>
-        <button
-          class="nav-link"
-          type="button"
-          (click)="scrollTo('services')"
-          (pointerenter)="setCursorState('link')"
-          (pointerleave)="setCursorState('default')"
-        >
-          Services
-        </button>
-        <button
-          class="nav-link"
-          type="button"
-          (click)="scrollTo('how')"
-          (pointerenter)="setCursorState('link')"
-          (pointerleave)="setCursorState('default')"
-        >
-          How we Work
-        </button>
-        <button
-          class="nav-link"
-          type="button"
-          (click)="scrollTo('why')"
-          (pointerenter)="setCursorState('link')"
-          (pointerleave)="setCursorState('default')"
-        >
-          Why Flowrish
-        </button>
-        <button
-          class="nav-link"
-          type="button"
-          (click)="scrollTo('contact')"
-          (pointerenter)="setCursorState('link')"
-          (pointerleave)="setCursorState('default')"
-        >
-          Contacts
-        </button>
+        <button class="nav-link" type="button" (click)="scrollTo('about')"
+          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">About</button>
+        <button class="nav-link" type="button" (click)="scrollTo('services')"
+          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">Services</button>
+        <button class="nav-link" type="button" (click)="scrollTo('how')"
+          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">How we Work</button>
+        <button class="nav-link" type="button" (click)="scrollTo('why')"
+          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">Why Flowrish</button>
+        <button class="nav-link" type="button" (click)="scrollTo('contact')"
+          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">Contacts</button>
       </div>
 
       <button
@@ -109,20 +74,17 @@
     <!-- Content -->
     <div class="relative z-10 mx-auto max-w-6xl h-full px-4 md:px-8 pt-24">
       <div class="h-full grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
-        <!-- LEFT: Flowrish -->
         <div #heroLeft class="select-none">
           <div class="flowrish-wordmark text-6xl md:text-7xl lg:text-8xl leading-none">
             Flowrish
           </div>
         </div>
 
-        <!-- RIGHT: Tagline -->
         <div #heroRight class="md:justify-self-end select-none">
           <p class="kicker text-right pt-[110px]">Growth that flows naturally</p>
         </div>
       </div>
 
-      <!-- Scroll hint -->
       <div
         class="absolute left-1/2 -translate-x-1/2 bottom-6 text-white/70 text-xs tracking-[0.2em] uppercase"
       >
@@ -131,13 +93,11 @@
     </div>
   </section>
 
-  <!-- SECTIONS -->
   <div #paper class="paper-layer">
     <!-- ABOUT -->
     <section id="about" class="section-wrap">
       <div class="mx-auto max-w-6xl px-4 md:px-8">
         <div class="about-grid">
-          <!-- LEFT -->
           <div class="about-left" data-reveal="left">
             <div class="about-eyebrow">About us</div>
 
@@ -149,7 +109,6 @@
             <p class="about-sub">A calm, focused team built for meaningful work — not noise.</p>
           </div>
 
-          <!-- RIGHT -->
           <div class="about-right" data-reveal="right">
             <div class="about-rule" aria-hidden="true"></div>
 
@@ -171,13 +130,7 @@
     </section>
 
     <!-- SERVICES -->
-    <section
-      #servicesSection
-      id="services"
-      class="section-wrap services-section"
-      aria-label="Services"
-    >
-      <!-- Background images (true crossfade) -->
+    <section #servicesSection id="services" class="section-wrap services-section" aria-label="Services">
       <div class="services-bg" [class.is-fading]="isServicesFading" aria-hidden="true">
         <div
           #servicesBgA
@@ -195,14 +148,12 @@
       </div>
 
       <div class="relative mx-auto max-w-6xl px-4 md:px-8">
-        <!-- Title styled like About -->
         <div class="services-title" data-reveal>
           <div class="about-eyebrow">Services</div>
           <h2 class="about-big">What we do.</h2>
           <p class="about-sub">Strategy-led, crafted with care.</p>
         </div>
 
-        <!-- Cards -->
         <div class="services-cards-wrap" data-reveal>
           <div class="services-cards" role="list">
             <button
