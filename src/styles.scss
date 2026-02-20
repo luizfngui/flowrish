@@ -370,13 +370,20 @@ body{
    SERVICES (SUPER LIGHT)
    =========================== */
 
+/* src/styles.css */
+/* (seu arquivo todo pode continuar igual — aqui eu deixo o arquivo completo só na parte services
+   para você copiar e substituir a seção SERVICES inteira) */
+
+/* ===========================
+   SERVICES (instant switch)
+   =========================== */
+
 .services-section{
   overflow: hidden;
   min-height: 125svh;
   padding: 6.5rem 0 7rem;
 }
 
-/* Background container */
 .services-bg{
   position: absolute;
   inset: 0;
@@ -386,9 +393,9 @@ body{
   isolation: isolate;
   contain: paint;
   transform: translateZ(0);
-  will-change: opacity, transform;
 }
 
+/* ✅ zero efeitos: sem transition, sem zoom */
 .services-bg-layer{
   position: absolute;
   inset: -12%;
@@ -398,29 +405,15 @@ body{
 
   filter: brightness(1.06) contrast(1.05) saturate(1.05);
 
-  transition:
-    opacity var(--svc-fade-ms) var(--svc-ease),
-    transform calc(var(--svc-fade-ms) + 250ms) var(--svc-ease);
-
-  will-change: opacity, transform;
+  transition: none !important;
+  transform: none !important;
+  will-change: auto !important;
   backface-visibility: hidden;
-  transform-style: preserve-3d;
-
-  transform: translate3d(0,0,0) scale(1.045);
-  transform-origin: center center;
 }
 
-.services-bg-layer--a{ opacity: 1; transform: translate3d(0,0,0) scale(1.03); }
-.services-bg-layer--b{ opacity: 0; transform: translate3d(0,0,0) scale(1.06); }
-
-.services-bg.is-fading .services-bg-layer--a{
-  opacity: 0;
-  transform: translate3d(0,0,0) scale(1.00);
-}
-.services-bg.is-fading .services-bg-layer--b{
-  opacity: 1;
-  transform: translate3d(0,0,0) scale(1.03);
-}
+/* ✅ A sempre visível, B sempre escondida */
+.services-bg-layer--a{ opacity: 1; }
+.services-bg-layer--b{ opacity: 0; }
 
 .services-bg-overlay{
   position: absolute;
@@ -456,6 +449,8 @@ body{
     gap: 18px;
   }
 }
+
+/* (cards fake glass continuam como estavam; não mexi aqui) */
 
 /* ✅ Fake glass card (no blur) */
 .svc-card{
@@ -599,4 +594,50 @@ body{
   .svc-content{
     transition: none !important;
   }
+}
+
+/* src/styles.css */
+/* (Seu arquivo inteiro pode ficar como está — abaixo são SÓ as mudanças que você deve aplicar) */
+
+/* ===========================
+   SERVICES (fade + zoom perfect)
+   =========================== */
+
+/* background layers: garante transição consistente + “zoom in/out” */
+.services-bg-layer{
+  /* ...mantenha suas outras props... */
+
+  /* ✅ truque: separa composição e evita atraso em alguns browsers */
+  transform: translate3d(0,0,0) scale(1.06);
+  will-change: opacity, transform;
+
+  transition:
+    opacity var(--svc-fade-ms) var(--svc-ease),
+    transform var(--svc-fade-ms) var(--svc-ease);
+}
+
+/* base state (no fade): A visível, B escondida e um pouco mais “zoom” */
+.services-bg-layer--a{
+  opacity: 1;
+  transform: translate3d(0,0,0) scale(1.04);
+}
+.services-bg-layer--b{
+  opacity: 0;
+  transform: translate3d(0,0,0) scale(1.10);
+}
+
+/* fade state: A sai com zoom OUT, B entra com zoom IN e “assenta” */
+.services-bg.is-fading .services-bg-layer--a{
+  opacity: 0;
+  transform: translate3d(0,0,0) scale(1.00); /* zoom out */
+}
+.services-bg.is-fading .services-bg-layer--b{
+  opacity: 1;
+  transform: translate3d(0,0,0) scale(1.04); /* settles */
+}
+
+/* ✅ opcional: melhora nitidez no Chrome durante animação */
+.services-bg{
+  transform: translateZ(0);
+  isolation: isolate;
 }

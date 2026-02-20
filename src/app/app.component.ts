@@ -51,21 +51,19 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   reduceMotion = false;
 
+  // SERVICES
   activeServiceIndex = 0;
   readonly serviceBgs = ['images/image1.jpg', 'images/image2.jpg', 'images/image3.jpg'];
-
   currentServiceBg = this.serviceBgs[0];
+
+  // Mantidos pra não quebrar seu HTML (ele ainda referencia)
   nextServiceBg = this.serviceBgs[0];
   isServicesFading = false;
-
-  private fadeTimer: number | null = null;
 
   private pendingServiceIndex: number | null = null;
   private hoverRaf: number | null = null;
   private lastSwitchAt = 0;
-
-  private readonly FADE_MS = 950;
-  private readonly MIN_GAP_MS = 130;
+  private readonly MIN_GAP_MS = 90;
 
   ngAfterViewInit(): void {
     if (!this.isBrowser) return;
@@ -96,7 +94,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.rafId) cancelAnimationFrame(this.rafId);
-    if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
     if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
 
     this.removePointerListener?.();
@@ -110,8 +107,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   onServiceLeave() {
     this.setCursorState('default');
-
-    // ✅ evita “troca atrasada” quando sai rápido dos cards
     this.pendingServiceIndex = null;
   }
 
@@ -143,32 +138,19 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  // ✅ background instantâneo (sem fade/zoom)
   setActiveService(index: number) {
     if (index === this.activeServiceIndex) return;
 
     this.activeServiceIndex = index;
-    const url = this.serviceBgs[index];
     this.lastSwitchAt = performance.now();
 
-    if (this.fadeTimer) {
-      window.clearTimeout(this.fadeTimer);
-      this.fadeTimer = null;
-      this.currentServiceBg = this.nextServiceBg;
-      this.isServicesFading = false;
-    }
-
+    const url = this.serviceBgs[index];
+    this.currentServiceBg = url;
     this.nextServiceBg = url;
-    this.isServicesFading = true;
-    this.cdr.markForCheck();
+    this.isServicesFading = false;
 
-    this.fadeTimer = window.setTimeout(() => {
-      this.zone.run(() => {
-        this.currentServiceBg = this.nextServiceBg;
-        this.isServicesFading = false;
-        this.fadeTimer = null;
-        this.cdr.markForCheck();
-      });
-    }, this.FADE_MS);
+    this.cdr.markForCheck();
   }
 
   private preloadServiceImages() {
@@ -259,6 +241,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
       if (!hero || !left || !right || !paper) return;
 
+      // Nav reveal
       if (nav) {
         gsap.fromTo(
           nav,
@@ -315,6 +298,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         },
       });
 
+      // Parallax sutil do background (opcional)
       const services = this.servicesSection?.nativeElement;
       const bgA = this.servicesBgA?.nativeElement;
       const bgB = this.servicesBgB?.nativeElement;
@@ -335,16 +319,18 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         });
       }
 
+      // ✅ REVEAL: esquerda vem da esquerda + fade, direita vem da direita + fade
       const revealEls = Array.from(document.querySelectorAll('[data-reveal]')) as HTMLElement[];
 
       revealEls.forEach((el) => {
         const mode = el.dataset['reveal'] || 'up';
+
         const from =
           mode === 'left'
-            ? { opacity: 0, x: -56, y: 10 }
+            ? { opacity: 0, x: -80, y: 0 } // esquerda
             : mode === 'right'
-            ? { opacity: 0, x: 56, y: 10 }
-            : { opacity: 0, x: 0, y: 22 };
+            ? { opacity: 0, x: 80, y: 0 }  // direita
+            : { opacity: 0, x: 0, y: 24 }; // default (subindo)
 
         gsap.set(el, { willChange: 'transform, opacity' });
 
@@ -355,7 +341,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
             opacity: 1,
             x: 0,
             y: 0,
-            duration: 0.85,
+            duration: 0.9,
             ease: 'power2.out',
             immediateRender: false,
             scrollTrigger: {
@@ -369,7 +355,6 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       });
 
       const refreshAll = () => {
-        // ✅ só refresh (menos trabalho)
         ScrollTrigger.refresh();
       };
 
