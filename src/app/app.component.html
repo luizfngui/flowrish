@@ -1,22 +1,11 @@
 <!-- src/app/app.component.html -->
 
 <!-- Custom cursor (desktop) -->
-<div
-  #cursor
-  class="custom-cursor hidden md:block"
-  aria-hidden="true"
-></div>
-<div
-  #cursorDot
-  class="custom-cursor-dot hidden md:block"
-  aria-hidden="true"
-></div>
+<div #cursor class="custom-cursor hidden md:block" aria-hidden="true"></div>
+<div #cursorDot class="custom-cursor-dot hidden md:block" aria-hidden="true"></div>
 
 <!-- NAV -->
-<header
-  #nav
-  class="fixed inset-x-0 top-0 z-50 px-4 md:px-8 pt-4"
->
+<header #nav class="fixed inset-x-0 top-0 z-50 px-4 md:px-8 pt-4">
   <nav
     class="mx-auto max-w-6xl rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
     aria-label="Primary"
@@ -25,34 +14,71 @@
       <button
         class="flex items-center gap-2 text-white/90 hover:text-white transition"
         (click)="scrollTo('top')"
-        (mouseenter)="setCursorState('link')"
-        (mouseleave)="setCursorState('default')"
+        (pointerenter)="setCursorState('link')"
+        (pointerleave)="setCursorState('default')"
         aria-label="Go to top"
         type="button"
       >
-        <span class="inline-block h-2 w-2 rounded-full bg-[rgb(var(--accent))] shadow-[0_0_20px_rgba(244,114,182,0.45)]"></span>
+        <span
+          class="inline-block h-2 w-2 rounded-full bg-[rgb(var(--accent))] shadow-[0_0_20px_rgba(244,114,182,0.45)]"
+        ></span>
         <span class="font-semibold tracking-wide">Flowrish</span>
       </button>
 
       <div class="hidden md:flex items-center gap-1">
-        <button class="nav-link" type="button" (click)="scrollTo('about')"
-          (mouseenter)="setCursorState('link')" (mouseleave)="setCursorState('default')">About</button>
-        <button class="nav-link" type="button" (click)="scrollTo('services')"
-          (mouseenter)="setCursorState('link')" (mouseleave)="setCursorState('default')">Services</button>
-        <button class="nav-link" type="button" (click)="scrollTo('how')"
-          (mouseenter)="setCursorState('link')" (mouseleave)="setCursorState('default')">How we Work</button>
-        <button class="nav-link" type="button" (click)="scrollTo('why')"
-          (mouseenter)="setCursorState('link')" (mouseleave)="setCursorState('default')">Why Flowrish</button>
-        <button class="nav-link" type="button" (click)="scrollTo('contact')"
-          (mouseenter)="setCursorState('link')" (mouseleave)="setCursorState('default')">Contacts</button>
+        <button
+          class="nav-link"
+          type="button"
+          (click)="scrollTo('about')"
+          (pointerenter)="setCursorState('link')"
+          (pointerleave)="setCursorState('default')"
+        >
+          About
+        </button>
+        <button
+          class="nav-link"
+          type="button"
+          (click)="scrollTo('services')"
+          (pointerenter)="setCursorState('link')"
+          (pointerleave)="setCursorState('default')"
+        >
+          Services
+        </button>
+        <button
+          class="nav-link"
+          type="button"
+          (click)="scrollTo('how')"
+          (pointerenter)="setCursorState('link')"
+          (pointerleave)="setCursorState('default')"
+        >
+          How we Work
+        </button>
+        <button
+          class="nav-link"
+          type="button"
+          (click)="scrollTo('why')"
+          (pointerenter)="setCursorState('link')"
+          (pointerleave)="setCursorState('default')"
+        >
+          Why Flowrish
+        </button>
+        <button
+          class="nav-link"
+          type="button"
+          (click)="scrollTo('contact')"
+          (pointerenter)="setCursorState('link')"
+          (pointerleave)="setCursorState('default')"
+        >
+          Contacts
+        </button>
       </div>
 
       <button
         class="md:hidden rounded-xl px-3 py-2 text-white/90 border border-white/10 bg-white/5 hover:bg-white/10 transition"
         type="button"
         (click)="scrollTo('contact')"
-        (mouseenter)="setCursorState('link')"
-        (mouseleave)="setCursorState('default')"
+        (pointerenter)="setCursorState('link')"
+        (pointerleave)="setCursorState('default')"
       >
         Contact
       </button>
@@ -62,11 +88,7 @@
 
 <!-- HERO -->
 <main id="top" class="min-h-screen bg-[rgb(var(--bg))] text-[rgb(var(--fg))]">
-  <section
-    #hero
-    class="relative h-[100svh] overflow-hidden"
-    aria-label="Flowrish hero"
-  >
+  <section #hero class="relative h-[100svh] overflow-hidden" aria-label="Flowrish hero">
     <!-- Video BG -->
     <video
       class="fixed inset-0 h-full w-full object-cover opacity-80 -z-10 pointer-events-none"
@@ -96,14 +118,14 @@
 
         <!-- RIGHT: Tagline -->
         <div #heroRight class="md:justify-self-end select-none">
-          <p class="kicker text-right pt-[110px]">
-            Growth that flows naturally
-          </p>
+          <p class="kicker text-right pt-[110px]">Growth that flows naturally</p>
         </div>
       </div>
 
       <!-- Scroll hint -->
-      <div class="absolute left-1/2 -translate-x-1/2 bottom-6 text-white/70 text-xs tracking-[0.2em] uppercase">
+      <div
+        class="absolute left-1/2 -translate-x-1/2 bottom-6 text-white/70 text-xs tracking-[0.2em] uppercase"
+      >
         Scroll
       </div>
     </div>
@@ -111,7 +133,6 @@
 
   <!-- SECTIONS -->
   <div #paper class="paper-layer">
-
     <!-- ABOUT -->
     <section id="about" class="section-wrap">
       <div class="mx-auto max-w-6xl px-4 md:px-8">
@@ -125,9 +146,7 @@
               Big care.
             </h2>
 
-            <p class="about-sub">
-              A calm, focused team built for meaningful work — not noise.
-            </p>
+            <p class="about-sub">A calm, focused team built for meaningful work — not noise.</p>
           </div>
 
           <!-- RIGHT -->
@@ -136,16 +155,14 @@
 
             <div class="about-copy">
               <p>
-                Flowrish was born from the belief that brand growth doesn't need to
-                be loud, aggressive, or soulless. We're a small, focused team of
-                strategists and creatives who care deeply about doing meaningful
-                work.
+                Flowrish was born from the belief that brand growth doesn't need to be loud,
+                aggressive, or soulless. We're a small, focused team of strategists and creatives who
+                care deeply about doing meaningful work.
               </p>
 
               <p class="mt-5">
-                We sit at the intersection of emotion and strategy — helping
-                businesses find their voice, clarify their story, and grow in ways
-                that feel authentic and sustainable.
+                We sit at the intersection of emotion and strategy — helping businesses find their
+                voice, clarify their story, and grow in ways that feel authentic and sustainable.
               </p>
             </div>
           </div>
@@ -153,30 +170,29 @@
       </div>
     </section>
 
-    <!-- SERVICES (NEW) -->
+    <!-- SERVICES -->
     <section
       #servicesSection
       id="services"
       class="section-wrap services-section"
       aria-label="Services"
     >
-      <!-- Background images (crossfade) -->
       <!-- Background images (true crossfade) -->
-<div class="services-bg" [class.is-fading]="isServicesFading" aria-hidden="true">
-  <div
-    #servicesBgA
-    class="services-bg-layer services-bg-layer--a"
-    [style.backgroundImage]="'url(' + currentServiceBg + ')'"
-  ></div>
+      <div class="services-bg" [class.is-fading]="isServicesFading" aria-hidden="true">
+        <div
+          #servicesBgA
+          class="services-bg-layer services-bg-layer--a"
+          [style.backgroundImage]="'url(' + currentServiceBg + ')'"
+        ></div>
 
-  <div
-    #servicesBgB
-    class="services-bg-layer services-bg-layer--b"
-    [style.backgroundImage]="'url(' + nextServiceBg + ')'"
-  ></div>
+        <div
+          #servicesBgB
+          class="services-bg-layer services-bg-layer--b"
+          [style.backgroundImage]="'url(' + nextServiceBg + ')'"
+        ></div>
 
-  <div class="services-bg-overlay"></div>
-</div>
+        <div class="services-bg-overlay"></div>
+      </div>
 
       <div class="relative mx-auto max-w-6xl px-4 md:px-8">
         <!-- Title styled like About -->
@@ -194,16 +210,16 @@
               class="svc-card"
               role="listitem"
               [class.is-active]="activeServiceIndex === 0"
-              (mouseenter)="setActiveService(0)"
+              (pointerenter)="onServiceEnter(0)"
+              (pointerleave)="onServiceLeave()"
               (focus)="setActiveService(0)"
-              (mouseenter)="setCursorState('link')"
-              (mouseleave)="setCursorState('default')"
             >
               <div class="svc-inner">
                 <h3 class="svc-title">Brand Strategy</h3>
                 <div class="svc-content">
                   <p>
-                    We uncover what makes your brand unique and build a clear, compelling foundation for everything that follows.
+                    We uncover what makes your brand unique and build a clear, compelling foundation
+                    for everything that follows.
                   </p>
                 </div>
               </div>
@@ -214,16 +230,16 @@
               class="svc-card"
               role="listitem"
               [class.is-active]="activeServiceIndex === 1"
-              (mouseenter)="setActiveService(1)"
+              (pointerenter)="onServiceEnter(1)"
+              (pointerleave)="onServiceLeave()"
               (focus)="setActiveService(1)"
-              (mouseenter)="setCursorState('link')"
-              (mouseleave)="setCursorState('default')"
             >
               <div class="svc-inner">
                 <h3 class="svc-title">Marketing Direction</h3>
                 <div class="svc-content">
                   <p>
-                    Thoughtful marketing that connects — from messaging frameworks to channel strategy, designed to resonate.
+                    Thoughtful marketing that connects — from messaging frameworks to channel
+                    strategy, designed to resonate.
                   </p>
                 </div>
               </div>
@@ -234,16 +250,16 @@
               class="svc-card"
               role="listitem"
               [class.is-active]="activeServiceIndex === 2"
-              (mouseenter)="setActiveService(2)"
+              (pointerenter)="onServiceEnter(2)"
+              (pointerleave)="onServiceLeave()"
               (focus)="setActiveService(2)"
-              (mouseenter)="setCursorState('link')"
-              (mouseleave)="setCursorState('default')"
             >
               <div class="svc-inner">
                 <h3 class="svc-title">Brand Consolidation</h3>
                 <div class="svc-content">
                   <p>
-                    For brands that have grown in many directions, we bring clarity, cohesion, and renewed confidence.
+                    For brands that have grown in many directions, we bring clarity, cohesion, and
+                    renewed confidence.
                   </p>
                 </div>
               </div>
@@ -314,8 +330,8 @@
           <a
             class="btn-primary"
             href="mailto:hello@flowrish.eu"
-            (mouseenter)="setCursorState('link')"
-            (mouseleave)="setCursorState('default')"
+            (pointerenter)="setCursorState('link')"
+            (pointerleave)="setCursorState('default')"
           >
             hello&#64;flowrish.eu
           </a>
@@ -333,22 +349,18 @@
               <button
                 class="btn-primary justify-center"
                 type="submit"
-                (mouseenter)="setCursorState('link')"
-                (mouseleave)="setCursorState('default')"
+                (pointerenter)="setCursorState('link')"
+                (pointerleave)="setCursorState('default')"
               >
                 Send message
               </button>
-              <p class="text-white/55 text-xs">
-                This form is just UI for now. We’ll wire it later.
-              </p>
+              <p class="text-white/55 text-xs">This form is just UI for now. We’ll wire it later.</p>
             </form>
           </div>
 
           <div data-reveal class="card">
             <h3 class="card-title">A calmer kind of growth</h3>
-            <p class="card-text mt-2">
-              Strategy with warmth. Design with intention. Execution with consistency.
-            </p>
+            <p class="card-text mt-2">Strategy with warmth. Design with intention. Execution with consistency.</p>
 
             <div class="mt-8 rounded-2xl border border-white/10 bg-black/25 p-6">
               <div class="text-white/70 text-sm">Prefer a quick intro call?</div>
@@ -356,8 +368,8 @@
               <button
                 class="mt-5 btn-ghost"
                 type="button"
-                (mouseenter)="setCursorState('link')"
-                (mouseleave)="setCursorState('default')"
+                (pointerenter)="setCursorState('link')"
+                (pointerleave)="setCursorState('default')"
                 (click)="scrollTo('top')"
               >
                 Back to top
@@ -372,6 +384,5 @@
         </footer>
       </div>
     </section>
-
   </div>
 </main>

@@ -2,9 +2,13 @@
 
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   ElementRef,
   HostListener,
+  NgZone,
+  OnDestroy,
   ViewChild,
   inject,
   PLATFORM_ID,
@@ -17,10 +21,13 @@ type CursorState = 'default' | 'link' | 'drag';
   selector: 'app-root',
   standalone: true,
   templateUrl: './app.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent implements AfterViewInit {
+export class AppComponent implements AfterViewInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private isBrowser = isPlatformBrowser(this.platformId);
+  private zone = inject(NgZone);
+  private cdr = inject(ChangeDetectorRef);
 
   @ViewChild('hero', { static: false }) hero?: ElementRef<HTMLElement>;
   @ViewChild('nav', { static: false }) nav?: ElementRef<HTMLElement>;
@@ -50,74 +57,137 @@ export class AppComponent implements AfterViewInit {
 
   // SERVICES state (default selected = 0)
   activeServiceIndex = 0;
-  readonly serviceBgs = [
-    'images/image1.jpg',
-    'images/image2.jpg',
-    'images/image3.jpg',
-  ];
+  readonly serviceBgs = ['images/image1.jpg', 'images/image2.jpg', 'images/image3.jpg'];
 
   currentServiceBg = this.serviceBgs[0];
   nextServiceBg = this.serviceBgs[0];
   isServicesFading = false;
+
   private fadeTimer: number | null = null;
+
+  // Smoother hover switching
+  private pendingServiceIndex: number | null = null;
+  private hoverRaf: number | null = null;
+  private lastSwitchAt = 0;
+
+  // Must match CSS vars in styles.css
+  private readonly FADE_MS = 950; // smoother, slightly longer
+  private readonly MIN_GAP_MS = 130; // small buffer to prevent thrash
 
   ngAfterViewInit(): void {
     if (!this.isBrowser) return;
 
+    // Safety: never keep content hidden by old gsap-on patterns
+    document.documentElement.classList.remove('gsap-on');
+
     this.reduceMotion =
       window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
 
-    // Enable initial hidden reveal CSS only when we intend to run GSAP.
-    // Failsafe: if GSAP doesn't init, remove the class so content shows.
-    if (!this.reduceMotion) {
-      document.documentElement.classList.add('gsap-on');
-
-      window.setTimeout(() => {
-        if (
-          document.documentElement.classList.contains('gsap-on') &&
-          !(window as any).__GSAP_READY__
-        ) {
-          document.documentElement.classList.remove('gsap-on');
-        }
-      }, 1500);
-    }
+    // Preload service backgrounds to remove decode stutter
+    this.preloadServiceImages();
 
     const finePointer = window.matchMedia?.('(pointer: fine)')?.matches ?? false;
-    if (finePointer) this.startCursorLoop();
+    if (finePointer) {
+      this.zone.runOutsideAngular(() => this.startCursorLoop());
+    }
 
     if (!this.reduceMotion) {
-      this.initGsap();
+      this.zone.runOutsideAngular(() => {
+        requestAnimationFrame(() => {
+          this.initGsap();
+        });
+      });
     }
   }
 
-  // Services: hover/select behavior + background crossfade
-  setActiveService(index: number) {
-  if (index === this.activeServiceIndex) return;
-
-  this.activeServiceIndex = index;
-  const url = this.serviceBgs[index];
-
-  // If an animation is in progress, commit immediately before starting a new one
-  if (this.fadeTimer) {
-    window.clearTimeout(this.fadeTimer);
-    this.fadeTimer = null;
-    this.currentServiceBg = this.nextServiceBg;
-    this.isServicesFading = false;
+  ngOnDestroy(): void {
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    if (this.fadeTimer) window.clearTimeout(this.fadeTimer);
+    if (this.hoverRaf) cancelAnimationFrame(this.hoverRaf);
   }
 
-  // Stage next image on layer B, then crossfade
-  this.nextServiceBg = url;
+  // Services pointer handlers (your HTML calls these)
+  onServiceEnter(index: number) {
+    this.setCursorState('link');
+    this.queueActiveService(index);
+  }
 
-  // Trigger crossfade (CSS animates A -> 0, B -> 1)
-  this.isServicesFading = true;
+  onServiceLeave() {
+    this.setCursorState('default');
+  }
 
-  // After fade completes, commit & reset
-  this.fadeTimer = window.setTimeout(() => {
-    this.currentServiceBg = this.nextServiceBg;
-    this.isServicesFading = false;
-    this.fadeTimer = null;
-  }, 700); // must match CSS transition duration
-}
+  private queueActiveService(index: number) {
+    const now = performance.now();
+    this.pendingServiceIndex = index;
+
+    if (this.hoverRaf) return;
+
+    this.hoverRaf = requestAnimationFrame(() => {
+      this.hoverRaf = null;
+
+      const since = now - this.lastSwitchAt;
+      if (since < this.MIN_GAP_MS) {
+        window.setTimeout(() => {
+          if (this.pendingServiceIndex != null) {
+            const idx = this.pendingServiceIndex;
+            this.pendingServiceIndex = null;
+            this.zone.run(() => this.setActiveService(idx));
+          }
+        }, this.MIN_GAP_MS - since);
+        return;
+      }
+
+      const idx = this.pendingServiceIndex;
+      this.pendingServiceIndex = null;
+      this.zone.run(() => this.setActiveService(idx!));
+    });
+  }
+
+  // Services: hover/select behavior + background crossfade (smoother)
+  setActiveService(index: number) {
+    if (index === this.activeServiceIndex) return;
+
+    this.activeServiceIndex = index;
+    const url = this.serviceBgs[index];
+    this.lastSwitchAt = performance.now();
+
+    // If a fade is already in progress, commit current state first
+    if (this.fadeTimer) {
+      window.clearTimeout(this.fadeTimer);
+      this.fadeTimer = null;
+      this.currentServiceBg = this.nextServiceBg;
+      this.isServicesFading = false;
+    }
+
+    // Stage next image on layer B, then crossfade
+    this.nextServiceBg = url;
+
+    // Trigger crossfade (CSS animates opacity + subtle zoom)
+    this.isServicesFading = true;
+    this.cdr.markForCheck();
+
+    // After fade completes, commit & reset
+    this.fadeTimer = window.setTimeout(() => {
+      this.zone.run(() => {
+        this.currentServiceBg = this.nextServiceBg;
+        this.isServicesFading = false;
+        this.fadeTimer = null;
+        this.cdr.markForCheck();
+      });
+    }, this.FADE_MS);
+  }
+
+  private preloadServiceImages() {
+    // Pre-decode images to avoid lag on the first hover
+    for (const src of this.serviceBgs) {
+      const img = new Image();
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = src;
+      // If supported, hint decode early (no-op on some browsers)
+      (img as any).decode?.().catch?.(() => {});
+    }
+  }
 
   private startCursorLoop() {
     const loop = () => {
@@ -127,10 +197,8 @@ export class AppComponent implements AfterViewInit {
       const c = this.cursor?.nativeElement;
       const d = this.cursorDot?.nativeElement;
 
-      if (c)
-        c.style.transform = `translate3d(${this.dotX}px, ${this.dotY}px, 0)`;
-      if (d)
-        d.style.transform = `translate3d(${this.mouseX}px, ${this.mouseY}px, 0)`;
+      if (c) c.style.transform = `translate3d(${this.dotX}px, ${this.dotY}px, 0)`;
+      if (d) d.style.transform = `translate3d(${this.mouseX}px, ${this.mouseY}px, 0)`;
 
       this.rafId = requestAnimationFrame(loop);
     };
@@ -156,6 +224,7 @@ export class AppComponent implements AfterViewInit {
     if (!this.isBrowser) return;
     const el = document.getElementById(id);
     if (!el) return;
+
     el.scrollIntoView({
       behavior: this.reduceMotion ? 'auto' : 'smooth',
       block: 'start',
@@ -171,29 +240,23 @@ export class AppComponent implements AfterViewInit {
       const ScrollTrigger = stModule.ScrollTrigger;
       gsap.registerPlugin(ScrollTrigger);
 
-      (window as any).__GSAP_READY__ = true;
-
       const hero = this.hero?.nativeElement;
       const left = this.heroLeft?.nativeElement;
       const right = this.heroRight?.nativeElement;
       const nav = this.nav?.nativeElement;
       const paper = this.paper?.nativeElement;
 
-      if (!hero || !left || !right || !paper) {
-        document.documentElement.classList.remove('gsap-on');
-        return;
-      }
+      if (!hero || !left || !right || !paper) return;
 
       // Nav reveal
       if (nav) {
         gsap.fromTo(
           nav,
           { y: -12, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.7, ease: 'power2.out' }
+          { y: 0, opacity: 1, duration: 0.7, ease: 'power2.out', immediateRender: false }
         );
       }
 
-      // Helper: move element's center to viewport center
       const centerDeltaX = (el: HTMLElement) => () => {
         const r = el.getBoundingClientRect();
         const elCenter = r.left + r.width / 2;
@@ -213,8 +276,7 @@ export class AppComponent implements AfterViewInit {
         invalidateOnRefresh: true,
       };
 
-      // Phase 1: pinned hero
-      const heroPinTl = gsap.timeline({
+      gsap.timeline({
         defaults: { ease: 'none' },
         scrollTrigger: {
           trigger: hero,
@@ -223,25 +285,14 @@ export class AppComponent implements AfterViewInit {
           scrub: 1.5,
           ...pinOpts,
         },
-      });
-
-      heroPinTl
+      })
         .addLabel('join', 0)
         .addLabel('fade', 0.78)
         .to(left, { x: centerDeltaX(left), duration: 0.78 }, 'join')
         .to(right, { x: centerDeltaX(right), duration: 0.78 }, 'join')
-        .to(
-          [left, right],
-          { y: -8, scale: 0.985, opacity: 0.95, duration: 0.78 },
-          'join'
-        )
-        .to(
-          [left, right],
-          { y: -40, opacity: 0, filter: 'blur(10px)', duration: 0.22 },
-          'fade'
-        );
+        .to([left, right], { y: -8, scale: 0.985, opacity: 0.95, duration: 0.78 }, 'join')
+        .to([left, right], { y: -40, opacity: 0, filter: 'blur(10px)', duration: 0.22 }, 'fade');
 
-      // Phase 2: paper overlays
       gsap.to(paper, {
         yPercent: 0,
         ease: 'power2.inOut',
@@ -254,7 +305,7 @@ export class AppComponent implements AfterViewInit {
         },
       });
 
-      // Services background parallax (both layers)
+      // ✅ Better parallax: almost static (tiny drift)
       const services = this.servicesSection?.nativeElement;
       const bgA = this.servicesBgA?.nativeElement;
       const bgB = this.servicesBgB?.nativeElement;
@@ -262,59 +313,66 @@ export class AppComponent implements AfterViewInit {
       if (services && bgA && bgB) {
         gsap.set([bgA, bgB], { willChange: 'transform' });
 
+        // very subtle drift so it feels “anchored”
         gsap.to([bgA, bgB], {
-          yPercent: -10,
+          yPercent: -3.5,
           ease: 'none',
           scrollTrigger: {
             trigger: services,
             start: 'top bottom',
             end: 'bottom top',
-            scrub: 1.2,
+            scrub: 1.1,
             invalidateOnRefresh: true,
           },
         });
       }
 
-      // Reveal animations (robust + matches CSS)
-      const revealEls = Array.from(
-        document.querySelectorAll('[data-reveal]')
-      ) as HTMLElement[];
+      // Reveal animations
+      const revealEls = Array.from(document.querySelectorAll('[data-reveal]')) as HTMLElement[];
 
       revealEls.forEach((el) => {
         const mode = el.dataset['reveal'] || 'up';
-
-        // Initial hidden state via GSAP (matches css html.gsap-on)
-        if (mode === 'left') {
-          gsap.set(el, { opacity: 0, filter: 'blur(10px)', x: -64, y: 10 });
-        } else if (mode === 'right') {
-          gsap.set(el, { opacity: 0, filter: 'blur(10px)', x: 64, y: 10 });
-        } else {
-          gsap.set(el, { opacity: 0, filter: 'blur(10px)', x: 0, y: 22 });
-        }
+        const from =
+          mode === 'left'
+            ? { opacity: 0, filter: 'blur(10px)', x: -64, y: 10 }
+            : mode === 'right'
+            ? { opacity: 0, filter: 'blur(10px)', x: 64, y: 10 }
+            : { opacity: 0, filter: 'blur(10px)', x: 0, y: 22 };
 
         gsap.set(el, { willChange: 'transform, opacity, filter' });
 
-        gsap.to(el, {
-          opacity: 1,
-          filter: 'blur(0px)',
-          x: 0,
-          y: 0,
-          duration: 0.9,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: el,
-            start: 'top 82%',
-            toggleActions: 'play none none reverse',
-            invalidateOnRefresh: true,
-          },
-        });
+        gsap.fromTo(
+          el,
+          from,
+          {
+            opacity: 1,
+            filter: 'blur(0px)',
+            x: 0,
+            y: 0,
+            duration: 0.9,
+            ease: 'power2.out',
+            immediateRender: false,
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 85%',
+              toggleActions: 'play none none reverse',
+              invalidateOnRefresh: true,
+            },
+          }
+        );
       });
 
-      ScrollTrigger.refresh(true);
-      requestAnimationFrame(() => ScrollTrigger.refresh(true));
+      const refreshAll = () => {
+        ScrollTrigger.refresh(true);
+        ScrollTrigger.update();
+      };
+
+      requestAnimationFrame(refreshAll);
+      setTimeout(refreshAll, 300);
+      (document as any).fonts?.ready?.then?.(() => refreshAll());
+      window.addEventListener('load', refreshAll, { once: true });
     } catch (err) {
       console.error('GSAP init failed:', err);
-      document.documentElement.classList.remove('gsap-on');
     }
   }
 }
