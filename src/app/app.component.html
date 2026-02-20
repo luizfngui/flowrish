@@ -5,47 +5,24 @@
 <div #cursorDot class="custom-cursor-dot hidden md:block" aria-hidden="true"></div>
 
 <!-- NAV -->
-<header #nav class="fixed inset-x-0 top-0 z-50 px-4 md:px-8 pt-4">
-  <nav
-    class="mx-auto max-w-6xl rounded-2xl border border-white/10 bg-black/35 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.35)]"
-    aria-label="Primary"
-  >
-    <div class="flex items-center justify-between px-4 md:px-6 py-3">
-      <button
-        class="flex items-center gap-2 text-white/90 hover:text-white transition"
-        (click)="scrollTo('top')"
-        (pointerenter)="setCursorState('link')"
-        (pointerleave)="setCursorState('default')"
-        aria-label="Go to top"
-        type="button"
-      >
-        <span
-          class="inline-block h-2 w-2 rounded-full bg-[rgb(var(--accent))] shadow-[0_0_20px_rgba(244,114,182,0.45)]"
-        ></span>
-        <span class="font-semibold tracking-wide">Flowrish</span>
+<!-- NAV -->
+<header #nav class="nav-wrap">
+  <nav class="nav-shell" aria-label="Primary">
+    <div class="nav-links" role="navigation" aria-label="Sections">
+      <button class="nav-pill" type="button" (click)="scrollTo('about')">
+        About
       </button>
-
-      <div class="hidden md:flex items-center gap-1">
-        <button class="nav-link" type="button" (click)="scrollTo('about')"
-          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">About</button>
-        <button class="nav-link" type="button" (click)="scrollTo('services')"
-          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">Services</button>
-        <button class="nav-link" type="button" (click)="scrollTo('how')"
-          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">How we Work</button>
-        <button class="nav-link" type="button" (click)="scrollTo('why')"
-          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">Why Flowrish</button>
-        <button class="nav-link" type="button" (click)="scrollTo('contact')"
-          (pointerenter)="setCursorState('link')" (pointerleave)="setCursorState('default')">Contacts</button>
-      </div>
-
-      <button
-        class="md:hidden rounded-xl px-3 py-2 text-white/90 border border-white/10 bg-white/5 hover:bg-white/10 transition"
-        type="button"
-        (click)="scrollTo('contact')"
-        (pointerenter)="setCursorState('link')"
-        (pointerleave)="setCursorState('default')"
-      >
-        Contact
+      <button class="nav-pill" type="button" (click)="scrollTo('services')">
+        Services
+      </button>
+      <button class="nav-pill" type="button" (click)="scrollTo('how')">
+        How we Work
+      </button>
+      <button class="nav-pill" type="button" (click)="scrollTo('why')">
+        Why Flowrish
+      </button>
+      <button class="nav-pill" type="button" (click)="scrollTo('contact')">
+        Contacts
       </button>
     </div>
   </nav>
@@ -221,53 +198,224 @@
     </section>
 
     <!-- HOW -->
-    <section id="how" class="section-wrap">
-      <div class="mx-auto max-w-6xl px-4 md:px-8">
-        <div data-reveal>
-          <h2 class="section-title">How we Work</h2>
-          <p class="section-lead">Quietly rigorous. Emotionally intelligent.</p>
-        </div>
+    <!-- HOW (premium) -->
+<section id="how" class="section-wrap how-premium" aria-label="How we work">
+  <div class="mx-auto max-w-6xl px-4 md:px-8">
+    <div class="how-grid">
+      <!-- Left editorial block -->
+      <div class="how-left" data-reveal="left">
+        <div class="about-eyebrow">How we work</div>
 
-        <ol class="mt-10 grid md:grid-cols-3 gap-5">
-          <li data-reveal class="card">
-            <div class="step-num">01</div>
-            <h3 class="card-title mt-2">Listen</h3>
-            <p class="card-text">We start with context: your people, your market, your truth.</p>
+        <h2 class="how-title">
+          Quiet rigor.<br />
+          Human delivery.
+        </h2>
+
+        <p class="how-lead">
+          A simple process that keeps your brand sharp, consistent, and emotionally true — without noise.
+        </p>
+
+        <div class="how-meta">
+          <div class="how-pill">
+            <span class="how-pill-dot"></span>
+            Strategy-first
+          </div>
+          <div class="how-pill">
+            <span class="how-pill-dot"></span>
+            Clear deliverables
+          </div>
+          <div class="how-pill">
+            <span class="how-pill-dot"></span>
+            Calm execution
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: steps timeline -->
+      <div class="how-right" data-reveal="right">
+        <div class="how-rail" aria-hidden="true"></div>
+
+        <ol class="how-steps" role="list">
+          <li class="how-step" data-reveal>
+            <div class="how-dot" aria-hidden="true"></div>
+            <div class="how-card">
+              <div class="how-card-top">
+                <div class="how-num">01</div>
+                <h3 class="how-card-title">Listen</h3>
+              </div>
+              <p class="how-card-text">
+                We start with context: your people, your market, your truth. We look for the signal under the noise.
+              </p>
+
+              <div class="how-tags">
+                <span class="how-tag">Discovery</span>
+                <span class="how-tag">Positioning inputs</span>
+              </div>
+            </div>
           </li>
-          <li data-reveal class="card">
-            <div class="step-num">02</div>
-            <h3 class="card-title mt-2">Clarify</h3>
-            <p class="card-text">We refine positioning and messaging into a simple signal.</p>
+
+          <li class="how-step" data-reveal>
+            <div class="how-dot" aria-hidden="true"></div>
+            <div class="how-card">
+              <div class="how-card-top">
+                <div class="how-num">02</div>
+                <h3 class="how-card-title">Clarify</h3>
+              </div>
+              <p class="how-card-text">
+                We shape your story into a clear foundation — messaging, voice, and direction that feels unmistakably you.
+              </p>
+
+              <div class="how-tags">
+                <span class="how-tag">Messaging</span>
+                <span class="how-tag">Brand voice</span>
+              </div>
+            </div>
           </li>
-          <li data-reveal class="card">
-            <div class="step-num">03</div>
-            <h3 class="card-title mt-2">Craft</h3>
-            <p class="card-text">Design and execution that feels premium — never loud.</p>
+
+          <li class="how-step" data-reveal>
+            <div class="how-dot" aria-hidden="true"></div>
+            <div class="how-card">
+              <div class="how-card-top">
+                <div class="how-num">03</div>
+                <h3 class="how-card-title">Craft</h3>
+              </div>
+              <p class="how-card-text">
+                We turn strategy into premium execution — design systems, content direction, and touchpoints that stay consistent.
+              </p>
+
+              <div class="how-tags">
+                <span class="how-tag">Design direction</span>
+                <span class="how-tag">Execution</span>
+              </div>
+            </div>
           </li>
         </ol>
-      </div>
-    </section>
 
-    <!-- WHY -->
-    <section id="why" class="section-wrap">
-      <div class="mx-auto max-w-6xl px-4 md:px-8">
-        <div class="grid md:grid-cols-2 gap-10">
-          <div data-reveal>
-            <h2 class="section-title">Why us</h2>
-            <p class="section-lead">Not a loud agency. A long-term partner.</p>
-          </div>
-          <div data-reveal class="prose-dark">
-            <p>
-              We're not here to win awards or chase trends. We're here to help you build something
-              that grows steadily, resonates deeply, and stands the test of time.
-            </p>
-            <p class="mt-4">
-              Think of Flowrish as your calm strategic companion — equal parts clarity and care.
-            </p>
+        <div class="how-foot" data-reveal>
+          <div class="how-foot-card">
+            <div class="how-foot-title">Output you can actually use</div>
+            <div class="how-foot-text">
+              Clear frameworks, clear next steps, and a brand presence that feels cohesive — across every channel.
+            </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
+</section>
+
+    <!-- WHY -->
+    <!-- WHY (premium + wow) -->
+<section id="why" class="section-wrap why-premium" aria-label="Why Flowrish">
+  <!-- Background layers -->
+  <div class="why-bg" aria-hidden="true">
+    <div class="why-blob"></div>
+    <div class="why-gridlines"></div>
+    <div class="why-overlay"></div>
+  </div>
+
+  <div class="why-watermark" aria-hidden="true">Flowrish</div>
+
+  <div class="relative mx-auto max-w-6xl px-4 md:px-8">
+    <div class="why-grid">
+      <!-- Left -->
+      <div class="why-left" data-reveal="left">
+        <div class="about-eyebrow">Why us</div>
+
+        <h2 class="why-title">
+          Not a loud agency.<br />
+          A long-term partner.
+        </h2>
+
+        <p class="why-lead">
+          We build brands with clarity and emotion — then help you keep that clarity across every touchpoint.
+        </p>
+
+        <div class="why-points">
+          <div class="why-point">
+            <span class="why-point-dot"></span>
+            Strategy that stays practical.
+          </div>
+          <div class="why-point">
+            <span class="why-point-dot"></span>
+            Premium execution without the ego.
+          </div>
+          <div class="why-point">
+            <span class="why-point-dot"></span>
+            Consistency across brand + marketing.
+          </div>
+        </div>
+
+        <div class="why-signature" data-reveal>
+          <div class="why-sign-title">The Flowrish promise</div>
+          <div class="why-sign-text">
+            Calm, rigorous work — designed to grow steadily, not spike loudly.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right -->
+      <div class="why-right">
+        <div class="why-cards" role="list">
+          <article class="why-card" role="listitem" data-reveal>
+            <div class="why-card-top">
+              <div class="why-chip">Clarity</div>
+              <div class="why-num">01</div>
+            </div>
+            <h3 class="why-card-title">A clear signal</h3>
+            <p class="why-card-text">
+              We simplify your message into something people instantly understand — and remember.
+            </p>
+          </article>
+
+          <article class="why-card" role="listitem" data-reveal>
+            <div class="why-card-top">
+              <div class="why-chip">Emotion</div>
+              <div class="why-num">02</div>
+            </div>
+            <h3 class="why-card-title">Human resonance</h3>
+            <p class="why-card-text">
+              Brands don’t grow by shouting. They grow by meaning something to the right people.
+            </p>
+          </article>
+
+          <article class="why-card" role="listitem" data-reveal>
+            <div class="why-card-top">
+              <div class="why-chip">Care</div>
+              <div class="why-num">03</div>
+            </div>
+            <h3 class="why-card-title">Details matter</h3>
+            <p class="why-card-text">
+              We obsess over the small things — tone, spacing, hierarchy — because that’s where “premium” lives.
+            </p>
+          </article>
+
+          <article class="why-card why-card--highlight" role="listitem" data-reveal>
+            <div class="why-card-top">
+              <div class="why-chip why-chip--accent">Partner</div>
+              <div class="why-num">04</div>
+            </div>
+            <h3 class="why-card-title">Built for longevity</h3>
+            <p class="why-card-text">
+              We set you up with a foundation you can keep using — consistent decisions, across months (not campaigns).
+            </p>
+
+            <button
+              class="why-cta"
+              type="button"
+              (click)="scrollTo('contact')"
+              (pointerenter)="setCursorState('link')"
+              (pointerleave)="setCursorState('default')"
+            >
+              Work with Flowrish
+              <span class="why-cta-arrow" aria-hidden="true">→</span>
+            </button>
+          </article>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- CONTACT -->
     <section id="contact" class="section-wrap pb-20">

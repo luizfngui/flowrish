@@ -49,6 +49,8 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   private removePointerListener: (() => void) | null = null;
   private removeResizeListener: (() => void) | null = null;
 
+  private removeNavGlowListeners: (() => void) | null = null;
+
   reduceMotion = false;
 
   // SERVICES
@@ -56,7 +58,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
   readonly serviceBgs = ['images/image1.jpg', 'images/image2.jpg', 'images/image3.jpg'];
   currentServiceBg = this.serviceBgs[0];
 
-  // Mantidos pra não quebrar seu HTML (ele ainda referencia)
+  // Mantidos só pra não quebrar o HTML (ele ainda referencia)
   nextServiceBg = this.serviceBgs[0];
   isServicesFading = false;
 
@@ -67,6 +69,11 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     if (!this.isBrowser) return;
+
+    // ✅ nav glow follow mouse (fora do Angular)
+this.zone.runOutsideAngular(() => {
+  this.bindNavGlow();
+});
 
     document.documentElement.classList.remove('gsap-on');
 
@@ -98,6 +105,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
     this.removePointerListener?.();
     this.removeResizeListener?.();
+    this.removeNavGlowListeners?.();
   }
 
   onServiceEnter(index: number) {
@@ -138,7 +146,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  // ✅ background instantâneo (sem fade/zoom)
+  // background instantâneo (sem efeitos)
   setActiveService(index: number) {
     if (index === this.activeServiceIndex) return;
 
@@ -298,7 +306,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         },
       });
 
-      // Parallax sutil do background (opcional)
+      // Parallax sutil dos backgrounds do services (opcional)
       const services = this.servicesSection?.nativeElement;
       const bgA = this.servicesBgA?.nativeElement;
       const bgB = this.servicesBgB?.nativeElement;
@@ -319,18 +327,65 @@ export class AppComponent implements AfterViewInit, OnDestroy {
         });
       }
 
-      // ✅ REVEAL: esquerda vem da esquerda + fade, direita vem da direita + fade
+      // ✅ ABOUT scroll-scrub: entra -> centraliza -> sai
+      const aboutSection = document.getElementById('about');
+      const aboutLeft = aboutSection?.querySelector('.about-left') as HTMLElement | null;
+      const aboutRight = aboutSection?.querySelector('.about-right') as HTMLElement | null;
+
+      if (aboutSection && aboutLeft && aboutRight) {
+        // estados iniciais (laterais + transparente)
+        gsap.set(aboutLeft, { opacity: 0, x: -90, y: 0, willChange: 'transform, opacity' });
+        gsap.set(aboutRight, { opacity: 0, x: 90, y: 0, willChange: 'transform, opacity' });
+
+        const tlAbout = gsap.timeline({
+          scrollTrigger: {
+            trigger: aboutSection,
+            start: 'top 85%',
+            end: 'bottom 15%',
+            scrub: 1.1, // acompanha o scroll
+            invalidateOnRefresh: true,
+          },
+        });
+
+        // 0% -> 35%: entra e centraliza
+        tlAbout.to(
+          aboutLeft,
+          { opacity: 1, x: 0, duration: 0.35, ease: 'none' },
+          0
+        );
+        tlAbout.to(
+          aboutRight,
+          { opacity: 1, x: 0, duration: 0.35, ease: 'none' },
+          0
+        );
+
+        // 65% -> 100%: sai e volta para as laterais
+        tlAbout.to(
+          aboutLeft,
+          { opacity: 0, x: -90, duration: 0.35, ease: 'none' },
+          0.65
+        );
+        tlAbout.to(
+          aboutRight,
+          { opacity: 0, x: 90, duration: 0.35, ease: 'none' },
+          0.65
+        );
+      }
+
+      // ✅ Reveal padrão para o resto (mas NÃO para about-left/right)
       const revealEls = Array.from(document.querySelectorAll('[data-reveal]')) as HTMLElement[];
 
       revealEls.forEach((el) => {
-        const mode = el.dataset['reveal'] || 'up';
+        // pula About (já controlado por scrub)
+        if (el.classList.contains('about-left') || el.classList.contains('about-right')) return;
 
+        const mode = el.dataset['reveal'] || 'up';
         const from =
           mode === 'left'
-            ? { opacity: 0, x: -80, y: 0 } // esquerda
+            ? { opacity: 0, x: -56, y: 10 }
             : mode === 'right'
-            ? { opacity: 0, x: 80, y: 0 }  // direita
-            : { opacity: 0, x: 0, y: 24 }; // default (subindo)
+            ? { opacity: 0, x: 56, y: 10 }
+            : { opacity: 0, x: 0, y: 22 };
 
         gsap.set(el, { willChange: 'transform, opacity' });
 
@@ -341,7 +396,7 @@ export class AppComponent implements AfterViewInit, OnDestroy {
             opacity: 1,
             x: 0,
             y: 0,
-            duration: 0.9,
+            duration: 0.85,
             ease: 'power2.out',
             immediateRender: false,
             scrollTrigger: {
@@ -366,4 +421,42 @@ export class AppComponent implements AfterViewInit, OnDestroy {
       console.error('GSAP init failed:', err);
     }
   }
+
+  private bindNavGlow() {
+  const navEl = this.nav?.nativeElement;
+  if (!navEl) return;
+
+  const setVars = (x: number, y: number) => {
+    const r = navEl.getBoundingClientRect();
+    const mx = ((x - r.left) / r.width) * 100;
+    const my = ((y - r.top) / r.height) * 100;
+    navEl.style.setProperty('--mx', `${mx}%`);
+    navEl.style.setProperty('--my', `${my}%`);
+  };
+
+  const onMove = (e: PointerEvent) => {
+    setVars(e.clientX, e.clientY);
+    navEl.style.setProperty('--glow', '1');
+  };
+
+  const onEnter = (e: PointerEvent) => {
+    setVars(e.clientX, e.clientY);
+    navEl.style.setProperty('--glow', '1');
+  };
+
+  const onLeave = () => {
+    navEl.style.setProperty('--glow', '0');
+  };
+
+  navEl.addEventListener('pointermove', onMove, { passive: true });
+  navEl.addEventListener('pointerenter', onEnter, { passive: true });
+  navEl.addEventListener('pointerleave', onLeave, { passive: true });
+
+  this.removeNavGlowListeners = () => {
+    navEl.removeEventListener('pointermove', onMove as any);
+    navEl.removeEventListener('pointerenter', onEnter as any);
+    navEl.removeEventListener('pointerleave', onLeave as any);
+    this.removeNavGlowListeners = null;
+  };
+}
 }
