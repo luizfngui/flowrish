@@ -233,28 +233,39 @@ this.zone.runOutsideAngular(() => {
   }
 
   private async initGsap() {
-    try {
-      const gsapModule = await import('gsap');
-      const stModule = await import('gsap/ScrollTrigger');
+  try {
+    const gsapModule = await import('gsap');
+    const stModule = await import('gsap/ScrollTrigger');
 
-      const gsap = gsapModule.gsap;
-      const ScrollTrigger = stModule.ScrollTrigger;
-      gsap.registerPlugin(ScrollTrigger);
+    const gsap = gsapModule.gsap;
+    const ScrollTrigger = stModule.ScrollTrigger;
+    gsap.registerPlugin(ScrollTrigger);
 
-      const hero = this.hero?.nativeElement;
-      const left = this.heroLeft?.nativeElement;
-      const right = this.heroRight?.nativeElement;
-      const nav = this.nav?.nativeElement;
-      const paper = this.paper?.nativeElement;
+    // Menos “pulos” no mobile e durante resize
+    ScrollTrigger.config({
+      ignoreMobileResize: true,
+      autoRefreshEvents: 'visibilitychange,DOMContentLoaded,load,resize',
+    });
 
-      if (!hero || !left || !right || !paper) return;
+    // ✅ Só a partir daqui a gente esconde [data-reveal] via CSS (html.reveal-on)
+    document.documentElement.classList.add('reveal-on');
 
-      // Nav reveal
+    const hero = this.hero?.nativeElement;
+    const left = this.heroLeft?.nativeElement;
+    const right = this.heroRight?.nativeElement;
+    const nav = this.nav?.nativeElement;
+    const paper = this.paper?.nativeElement;
+
+    if (!hero || !left || !right || !paper) return;
+
+    // Use context para isolar e evitar triggers duplicados em hot reload/SPA
+    const ctx = gsap.context(() => {
+      // Nav reveal (leve)
       if (nav) {
         gsap.fromTo(
           nav,
           { y: -10, opacity: 0 },
-          { y: 0, opacity: 1, duration: 0.65, ease: 'power2.out', immediateRender: false }
+          { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out', immediateRender: false }
         );
       }
 
@@ -268,15 +279,7 @@ this.zone.runOutsideAngular(() => {
       gsap.set([left, right], { willChange: 'transform, opacity' });
       gsap.set(paper, { yPercent: 100, willChange: 'transform' });
 
-      const pinOpts = {
-        pin: true,
-        pinType: 'fixed' as const,
-        pinReparent: true,
-        pinSpacing: true,
-        anticipatePin: 1,
-        invalidateOnRefresh: true,
-      };
-
+      // HERO pin timeline (mantenho o teu)
       gsap.timeline({
         defaults: { ease: 'none' },
         scrollTrigger: {
@@ -284,7 +287,12 @@ this.zone.runOutsideAngular(() => {
           start: 'top top',
           end: () => `+=${Math.round(window.innerHeight * 1.35)}`,
           scrub: 1.35,
-          ...pinOpts,
+          pin: true,
+          pinType: 'fixed',
+          pinReparent: true,
+          pinSpacing: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
         },
       })
         .addLabel('join', 0)
@@ -306,121 +314,100 @@ this.zone.runOutsideAngular(() => {
         },
       });
 
-      // Parallax sutil dos backgrounds do services (opcional)
-      const services = this.servicesSection?.nativeElement;
-      const bgA = this.servicesBgA?.nativeElement;
-      const bgB = this.servicesBgB?.nativeElement;
-
-      if (services && bgA && bgB) {
-        gsap.set([bgA, bgB], { willChange: 'transform' });
-
-        gsap.to([bgA, bgB], {
-          yPercent: -3.5,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: services,
-            start: 'top bottom',
-            end: 'bottom top',
-            scrub: 1.05,
-            invalidateOnRefresh: true,
-          },
-        });
-      }
-
-      // ✅ ABOUT scroll-scrub: entra -> centraliza -> sai
+      // ✅ ABOUT scrub: entra -> centraliza -> sai
       const aboutSection = document.getElementById('about');
       const aboutLeft = aboutSection?.querySelector('.about-left') as HTMLElement | null;
       const aboutRight = aboutSection?.querySelector('.about-right') as HTMLElement | null;
 
       if (aboutSection && aboutLeft && aboutRight) {
-        // estados iniciais (laterais + transparente)
-        gsap.set(aboutLeft, { opacity: 0, x: -90, y: 0, willChange: 'transform, opacity' });
-        gsap.set(aboutRight, { opacity: 0, x: 90, y: 0, willChange: 'transform, opacity' });
+        gsap.set(aboutLeft, { opacity: 0, x: -90, willChange: 'transform, opacity' });
+        gsap.set(aboutRight, { opacity: 0, x: 90, willChange: 'transform, opacity' });
 
         const tlAbout = gsap.timeline({
           scrollTrigger: {
             trigger: aboutSection,
             start: 'top 85%',
             end: 'bottom 15%',
-            scrub: 1.1, // acompanha o scroll
+            scrub: 1.1,
             invalidateOnRefresh: true,
           },
         });
 
-        // 0% -> 35%: entra e centraliza
-        tlAbout.to(
-          aboutLeft,
-          { opacity: 1, x: 0, duration: 0.35, ease: 'none' },
-          0
-        );
-        tlAbout.to(
-          aboutRight,
-          { opacity: 1, x: 0, duration: 0.35, ease: 'none' },
-          0
-        );
+        tlAbout.to(aboutLeft, { opacity: 1, x: 0, duration: 0.35, ease: 'none' }, 0);
+        tlAbout.to(aboutRight, { opacity: 1, x: 0, duration: 0.35, ease: 'none' }, 0);
 
-        // 65% -> 100%: sai e volta para as laterais
-        tlAbout.to(
-          aboutLeft,
-          { opacity: 0, x: -90, duration: 0.35, ease: 'none' },
-          0.65
-        );
-        tlAbout.to(
-          aboutRight,
-          { opacity: 0, x: 90, duration: 0.35, ease: 'none' },
-          0.65
-        );
+        tlAbout.to(aboutLeft, { opacity: 0, x: -90, duration: 0.35, ease: 'none' }, 0.65);
+        tlAbout.to(aboutRight, { opacity: 0, x: 90, duration: 0.35, ease: 'none' }, 0.65);
       }
 
-      // ✅ Reveal padrão para o resto (mas NÃO para about-left/right)
+      // ✅ REVEALS para o resto: batch = menos triggers = menos flicker
       const revealEls = Array.from(document.querySelectorAll('[data-reveal]')) as HTMLElement[];
+      const filtered = revealEls.filter(
+        (el) => !el.classList.contains('about-left') && !el.classList.contains('about-right')
+      );
 
-      revealEls.forEach((el) => {
-        // pula About (já controlado por scrub)
-        if (el.classList.contains('about-left') || el.classList.contains('about-right')) return;
-
+      // Define estados iniciais por modo (uma vez)
+      filtered.forEach((el) => {
         const mode = el.dataset['reveal'] || 'up';
-        const from =
-          mode === 'left'
-            ? { opacity: 0, x: -56, y: 10 }
-            : mode === 'right'
-            ? { opacity: 0, x: 56, y: 10 }
-            : { opacity: 0, x: 0, y: 22 };
+        if (mode === 'left') gsap.set(el, { opacity: 0, x: -40, y: 6 });
+        else if (mode === 'right') gsap.set(el, { opacity: 0, x: 40, y: 6 });
+        else gsap.set(el, { opacity: 0, x: 0, y: 18 });
+      });
 
-        gsap.set(el, { willChange: 'transform, opacity' });
-
-        gsap.fromTo(
-          el,
-          from,
-          {
+      ScrollTrigger.batch(filtered, {
+        start: 'top 85%',
+        end: 'bottom 15%',
+        onEnter: (batch) => {
+          gsap.to(batch, {
             opacity: 1,
             x: 0,
             y: 0,
-            duration: 0.85,
+            duration: 0.7,
             ease: 'power2.out',
-            immediateRender: false,
-            scrollTrigger: {
-              trigger: el,
-              start: 'top 85%',
-              toggleActions: 'play none none reverse',
-              invalidateOnRefresh: true,
-            },
-          }
-        );
+            stagger: 0.06,
+            overwrite: 'auto',
+          });
+        },
+        onLeaveBack: (batch) => {
+          // bem leve ao voltar pra cima, evita “pisca” agressivo
+          gsap.to(batch, {
+            opacity: 0,
+            y: 18,
+            duration: 0.35,
+            ease: 'power2.out',
+            stagger: 0.02,
+            overwrite: 'auto',
+          });
+        },
       });
+    });
 
-      const refreshAll = () => {
-        ScrollTrigger.refresh();
-      };
+    // ✅ Refresh robusto: resolve “só aparece depois do refresh”
+    const refreshAll = () => {
+      ScrollTrigger.refresh();
+      ScrollTrigger.update();
+    };
 
-      requestAnimationFrame(refreshAll);
-      setTimeout(refreshAll, 250);
-      (document as any).fonts?.ready?.then?.(() => refreshAll());
-      window.addEventListener('load', refreshAll, { once: true });
-    } catch (err) {
-      console.error('GSAP init failed:', err);
-    }
+    // 1) alguns frames depois do init
+    requestAnimationFrame(() => requestAnimationFrame(refreshAll));
+    // 2) depois que a fonte carregar
+    (document as any).fonts?.ready?.then?.(() => refreshAll());
+    // 3) depois do load
+    window.addEventListener('load', refreshAll, { once: true });
+
+    // 4) se o vídeo mudar layout/altura por metadata, refresca também
+    const vid = document.querySelector('video');
+    vid?.addEventListener?.('loadedmetadata', refreshAll, { once: true } as any);
+    vid?.addEventListener?.('loadeddata', refreshAll, { once: true } as any);
+
+    // Se quiser limpar depois, guarde ctx e chame ctx.revert() no destroy.
+    // (No teu caso atual, como é App root, dá pra deixar.)
+  } catch (err) {
+    // Se GSAP falhar, remove a classe pra não esconder conteúdo
+    document.documentElement.classList.remove('reveal-on');
+    console.error('GSAP init failed:', err);
   }
+}
 
   private bindNavGlow() {
   const navEl = this.nav?.nativeElement;
